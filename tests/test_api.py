@@ -73,3 +73,16 @@ def test_url_download_failure_suggests_upload(client, monkeypatch):
     res = client.post("/api/identify/url", json={"url": "https://www.instagram.com/reel/ABC123/"})
     assert res.status_code == 502
     assert "upload" in res.json()["detail"].lower()
+
+
+def test_vercel_rewrite_restores_original_path(monkeypatch):
+    """Vercel calls the function as /api/index?path=<original>. Routing must still work."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("vercel_entry", Path(__file__).parent.parent / "api" / "index.py")
+    entry = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(entry)
+    c = TestClient(entry.app)
+    assert c.get("/api/index?path=health").json()["ffmpeg"] is True
+    assert c.post("/api/index.py?path=identify/url", json={"url": "https://example.com"}).status_code == 400
+    assert c.get("/api/health").status_code == 200  # untouched when Vercel keeps the path

@@ -38,7 +38,7 @@ docker run -p 8000:8000 --env-file .env reel-song-finder
 
 ## Deploy on Vercel
 
-The repo is ready for Vercel: `vercel.json` routes every request to the FastAPI app in `api/index.py`, and ffmpeg comes from the `imageio-ffmpeg` package since Vercel has no system ffmpeg.
+The repo is ready for Vercel: `vercel.json` serves the page from `public/` and sends `/api/*` to the FastAPI app in `api/index.py`, and ffmpeg comes from the `imageio-ffmpeg` package since Vercel has no system ffmpeg.
 
 1. Go to https://vercel.com/new and import `pandacover/reel-song-fetch`.
 2. Leave the framework preset as "Other" and click Deploy.

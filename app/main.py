@@ -19,7 +19,7 @@ from .instagram import InstagramError, download_reel, is_instagram_url
 from .recognizers import default_recognizers, recognize_segments
 
 logging.basicConfig(level=logging.INFO)
-STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+PUBLIC_DIR = Path(__file__).resolve().parent.parent / "public"
 
 app = FastAPI(title="Reel Song Finder")
 
@@ -98,7 +98,8 @@ async def identify_file(file: UploadFile = File(...)) -> dict[str, Any]:
 
 @app.api_route("/", methods=["GET", "HEAD"])
 async def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(PUBLIC_DIR / "index.html")
 
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# On Vercel, files in public/ are served by the CDN. Locally FastAPI serves them.
+app.mount("/static", StaticFiles(directory=PUBLIC_DIR / "static"), name="static")

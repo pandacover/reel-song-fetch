@@ -139,4 +139,4 @@ def test_vercel_entry_imports_app():
     spec = importlib.util.spec_from_file_location("vercel_entry", Path(__file__).parent.parent / "api" / "index.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert module.app.title == "Reel Song Finder"
+    assert module.fastapi_app.title == "Reel Song Finder"
