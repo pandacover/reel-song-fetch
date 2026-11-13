@@ -16,12 +16,15 @@ from pydantic import BaseModel
 from . import config
 from .audio import AudioError, extract_segments, ffmpeg_available
 from .instagram import InstagramError, download_reel, is_instagram_url
+from .vercel import VercelPathMiddleware
 from .recognizers import default_recognizers, recognize_segments
 
 logging.basicConfig(level=logging.INFO)
 PUBLIC_DIR = Path(__file__).resolve().parent.parent / "public"
 
 app = FastAPI(title="Reel Song Finder")
+# On Vercel, /api/<path> is rewritten to /api/index?path=<path>; put the path back.
+app.add_middleware(VercelPathMiddleware)
 
 # Tests swap this out to avoid real network calls.
 get_recognizers = default_recognizers
@@ -43,23 +46,6 @@ async def _identify(media: Path, work_dir: Path) -> dict[str, Any]:
         "songs": songs,
         "errors": errors,
     }
-
-
-@app.exception_handler(404)
-async def not_found(request, exc):
-    # Temporary routing diagnostics for the Vercel deploy.
-    from fastapi.responses import JSONResponse
-
-    headers = {k: v for k, v in request.headers.items()
-               if k.startswith("x-") and not any(w in k for w in ("ip", "for", "signature", "token", "auth", "key", "sc-", "secret", "cookie"))}
-    return JSONResponse(status_code=200 if "debug" in str(request.url) else 404, content={
-        "detail": "Not Found",
-        "path": request.scope.get("path"),
-        "raw_path": (request.scope.get("raw_path") or b"").decode(errors="replace"),
-        "query": request.scope.get("query_string", b"").decode(errors="replace"),
-        "root_path": request.scope.get("root_path"),
-        "headers": headers,
-    })
 
 
 @app.api_route("/api/health", methods=["GET", "HEAD"])
