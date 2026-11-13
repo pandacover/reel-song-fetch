@@ -1,15 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "public",
   "functions": {
     "api/index.py": {
       "maxDuration": 120,
-      "includeFiles": "{app,static}/**"
+      "includeFiles": "app/**"
     }
   },
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index"
+      "source": "/api/:path*",
+      "destination": "/api/index?path=:path*"
     }
   ]
 }
