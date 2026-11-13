@@ -86,3 +86,22 @@ def test_vercel_rewrite_restores_original_path(monkeypatch):
     assert c.get("/api/index?path=health").json()["ffmpeg"] is True
     assert c.post("/api/index.py?path=identify/url", json={"url": "https://example.com"}).status_code == 400
     assert c.get("/api/health").status_code == 200  # untouched when Vercel keeps the path
+
+
+def test_backend_starts_without_public_dir(tmp_path):
+    """Vercel bundles only app/ and api/ with the function, not public/."""
+    import shutil
+    import subprocess
+    import sys
+
+    root = Path(__file__).parent.parent
+    for name in ("app", "api"):
+        shutil.copytree(root / name, tmp_path / name)
+    code = (
+        "import runpy; from fastapi.testclient import TestClient;"
+        "m = runpy.run_path('api/index.py');"
+        "r = TestClient(m['app']).get('/api/index?path=health');"
+        "print(r.status_code)"
+    )
+    out = subprocess.run([sys.executable, "-c", code], cwd=tmp_path, capture_output=True, text=True)
+    assert out.stdout.strip().endswith("200"), out.stderr[-500:]
