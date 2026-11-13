@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reel Song Finder</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>Reel Song Finder</h1>
+      <p class="sub">Paste an Instagram reel link, or upload the video, to find the songs in it.</p>
+    </header>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="url" role="tab" aria-selected="true">Paste link</button>
+      <button class="tab" data-tab="file" role="tab" aria-selected="false">Upload video</button>
+    </div>
+
+    <form id="url-form" class="panel" data-panel="url">
+      <label for="url" class="sr-only">Instagram reel link</label>
+      <input id="url" name="url" type="url" required
+             placeholder="https://www.instagram.com/reel/..." autocomplete="off">
+      <button type="submit">Find songs</button>
+    </form>
+
+    <form id="file-form" class="panel hidden" data-panel="file">
+      <label class="drop" id="drop">
+        <input id="file" name="file" type="file" accept="video/*,audio/*" required>
+        <span id="drop-text">Drop a video or audio file here, or tap to choose one</span>
+      </label>
+      <button type="submit">Find songs</button>
+    </form>
+
+    <section id="status" class="status hidden" aria-live="polite"></section>
+    <section id="results"></section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
