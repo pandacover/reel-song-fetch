@@ -31,6 +31,9 @@ def client(monkeypatch):
 def test_index_and_health(client):
     assert "Reel Song Finder" in client.get("/").text
     assert client.get("/api/health").json()["ffmpeg"] is True
+    # Uptime checkers and link previews often send HEAD first.
+    assert client.head("/").status_code == 200
+    assert client.head("/api/health").status_code == 200
 
 
 def test_upload_finds_song(client, tone_file):
