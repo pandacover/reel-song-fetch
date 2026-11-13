@@ -45,6 +45,23 @@ async def _identify(media: Path, work_dir: Path) -> dict[str, Any]:
     }
 
 
+@app.exception_handler(404)
+async def not_found(request, exc):
+    # Temporary routing diagnostics for the Vercel deploy.
+    from fastapi.responses import JSONResponse
+
+    headers = {k: v for k, v in request.headers.items()
+               if k.startswith("x-") and "ip" not in k and "for" not in k and "signature" not in k}
+    return JSONResponse(status_code=404, content={
+        "detail": "Not Found",
+        "path": request.scope.get("path"),
+        "raw_path": (request.scope.get("raw_path") or b"").decode(errors="replace"),
+        "query": request.scope.get("query_string", b"").decode(errors="replace"),
+        "root_path": request.scope.get("root_path"),
+        "headers": headers,
+    })
+
+
 @app.api_route("/api/health", methods=["GET", "HEAD"])
 async def health() -> dict[str, Any]:
     return {
