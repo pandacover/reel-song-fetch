@@ -45,7 +45,7 @@ async def _identify(media: Path, work_dir: Path) -> dict[str, Any]:
     }
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 async def health() -> dict[str, Any]:
     return {
         "ok": ffmpeg_available(),
@@ -96,7 +96,7 @@ async def identify_file(file: UploadFile = File(...)) -> dict[str, Any]:
     return {"source": "upload", "reel": {"title": file.filename}, "instagram_music": None, **result}
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
