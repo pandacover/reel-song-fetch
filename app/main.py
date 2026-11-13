@@ -101,5 +101,7 @@ async def index() -> FileResponse:
     return FileResponse(PUBLIC_DIR / "index.html")
 
 
-# On Vercel, files in public/ are served by the CDN. Locally FastAPI serves them.
-app.mount("/static", StaticFiles(directory=PUBLIC_DIR / "static"), name="static")
+# On Vercel, files in public/ are served by the CDN and are not bundled with
+# the function, so only mount them when they are present (local runs, Docker).
+if (PUBLIC_DIR / "static").is_dir():
+    app.mount("/static", StaticFiles(directory=PUBLIC_DIR / "static"), name="static")
