@@ -18,7 +18,7 @@ Paste a reel link, or upload the video (or audio) file if the link does not work
 
 ## Run it
 
-You need Python 3.11+ and ffmpeg.
+You need Python 3.11+. A system ffmpeg is used if installed, otherwise the bundled one.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -35,6 +35,19 @@ Or with Docker:
 docker build -t reel-song-finder .
 docker run -p 8000:8000 --env-file .env reel-song-finder
 ```
+
+## Deploy on Vercel
+
+The repo is ready for Vercel: `vercel.json` routes every request to the FastAPI app in `api/index.py`, and ffmpeg comes from the `imageio-ffmpeg` package since Vercel has no system ffmpeg.
+
+1. Go to https://vercel.com/new and import `pandacover/reel-song-fetch`.
+2. Leave the framework preset as "Other" and click Deploy.
+3. Optional: add `AUDD_API_TOKEN` under Settings > Environment Variables.
+
+Vercel limits:
+
+- Requests can be at most 4.5 MB. The upload tab handles this by pulling the audio out in your browser and sending up to 2 minutes of small 16 kHz audio.
+- Instagram often blocks downloads from Vercel's servers. If links fail there, use the upload tab, or run the app on your own machine.
 
 ## Settings
 

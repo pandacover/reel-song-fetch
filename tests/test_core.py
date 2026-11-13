@@ -105,3 +105,38 @@ def test_short_error():
     raw = ("ERROR: [_MusicAwareInstagram] C1a2: Unable to download webpage: curl: (7) failed. "
            "See https://curl.se/x (caused by ProxyError('x')); please report this issue on https://github.com")
     assert instagram._short_error(raw) == "Unable to download webpage: curl: (7) failed."
+
+
+def test_bundled_ffmpeg_fallback(monkeypatch, tone_file: Path, tmp_path: Path):
+    """On Vercel there is no system ffmpeg, so the imageio-ffmpeg copy must work."""
+    real_which = audio.shutil.which
+    monkeypatch.setattr(audio.shutil, "which", lambda name: None if name == "ffmpeg" else real_which(name))
+    audio.ffmpeg_path.cache_clear()
+    try:
+        path = audio.ffmpeg_path()
+        assert path and "imageio_ffmpeg" in path
+        duration, segments = audio.extract_segments(tone_file, tmp_path)
+        assert 29 <= duration <= 31 and segments
+    finally:
+        audio.ffmpeg_path.cache_clear()
+
+
+def test_probe_rejects_file_without_audio(tmp_path: Path):
+    import subprocess
+
+    silent = tmp_path / "video_only.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=2",
+                    "-c:v", "libx264", str(silent)], check=True)
+    import pytest
+
+    with pytest.raises(audio.AudioError, match="no audio"):
+        audio.probe_duration(silent)
+
+
+def test_vercel_entry_imports_app():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("vercel_entry", Path(__file__).parent.parent / "api" / "index.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.app.title == "Reel Song Finder"

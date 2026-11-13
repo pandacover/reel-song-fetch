@@ -141,12 +141,66 @@ $("#url-form").addEventListener("submit", (e) => {
     });
 });
 
-$("#file-form").addEventListener("submit", (e) => {
+// Hosts like Vercel cap request bodies at about 4.5 MB, so we shrink the file
+// in the browser first: decode it, keep up to 2 minutes of 16 kHz mono audio,
+// and send that as a small WAV. If the browser cannot decode it, we send the original.
+const MAX_CLIENT_SECONDS = 120;
+const TARGET_RATE = 16000;
+const RAW_UPLOAD_LIMIT = 4 * 1024 * 1024;
+
+async function toSmallWav(file) {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx || !window.OfflineAudioContext) throw new Error("no Web Audio");
+  const ctx = new Ctx();
+  try {
+    const decoded = await ctx.decodeAudioData(await file.arrayBuffer());
+    const seconds = Math.min(decoded.duration, MAX_CLIENT_SECONDS);
+    const offline = new OfflineAudioContext(1, Math.ceil(seconds * TARGET_RATE), TARGET_RATE);
+    const src = offline.createBufferSource();
+    src.buffer = decoded;
+    src.connect(offline.destination);
+    src.start(0);
+    const rendered = await offline.startRendering();
+    return encodeWav(rendered.getChannelData(0), TARGET_RATE);
+  } finally {
+    ctx.close?.();
+  }
+}
+
+function encodeWav(samples, rate) {
+  const buf = new ArrayBuffer(44 + samples.length * 2);
+  const v = new DataView(buf);
+  const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); str(8, "WAVE");
+  str(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  str(36, "data"); v.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) {
+    const x = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true);
+  }
+  return new Blob([buf], { type: "audio/wav" });
+}
+
+$("#file-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const button = e.submitter || e.target.querySelector("button");
   const file = fileInput.files[0];
   if (!file) { setStatus("Pick a file first.", true); return; }
+  button.disabled = true;
+  setStatus("Reading the audio from your file…");
+  let upload = file, name = file.name;
+  try {
+    upload = await toSmallWav(file);
+    name = file.name.replace(/\.[^.]+$/, "") + ".wav";
+  } catch (err) {
+    if (file.size > RAW_UPLOAD_LIMIT) {
+      setStatus("Your browser could not read this file, and it is too big to send as is (over 4 MB). Try a different browser or a shorter clip.", true);
+      button.disabled = false;
+      return;
+    }
+  }
   const form = new FormData();
-  form.append("file", file);
-  run(() => fetch("/api/identify/file", { method: "POST", body: form }),
-    e.submitter || e.target.querySelector("button"));
+  form.append("file", upload, name);
+  run(() => fetch("/api/identify/file", { method: "POST", body: form }), button);
 });

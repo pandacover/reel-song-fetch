@@ -11,6 +11,7 @@ from yt_dlp.extractor.instagram import InstagramIE
 from yt_dlp.utils import DownloadError
 
 from . import config
+from .audio import ffmpeg_path
 
 INSTAGRAM_URL_RE = re.compile(
     r"^https?://(?:www\.|m\.)?instagram\.com/(?:[\w.]+/)?(?:reels?|p|tv)/[\w-]+", re.I
@@ -117,7 +118,11 @@ def download_reel(url: str, out_dir: Path) -> tuple[Path, dict[str, Any]]:
         "no_warnings": True,
         "noprogress": True,
         "max_filesize": config.MAX_UPLOAD_MB * 1024 * 1024,
+        "cachedir": False,  # home dir is read only on serverless hosts
     }
+    ffmpeg = ffmpeg_path()
+    if ffmpeg:
+        params["ffmpeg_location"] = ffmpeg
     if config.INSTAGRAM_COOKIES_FILE:
         params["cookiefile"] = config.INSTAGRAM_COOKIES_FILE
 
