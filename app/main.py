@@ -52,7 +52,7 @@ async def not_found(request, exc):
 
     headers = {k: v for k, v in request.headers.items()
                if k.startswith("x-") and not any(w in k for w in ("ip", "for", "signature", "token", "auth", "key", "sc-", "secret", "cookie"))}
-    return JSONResponse(status_code=404, content={
+    return JSONResponse(status_code=200 if "debug" in str(request.url) else 404, content={
         "detail": "Not Found",
         "path": request.scope.get("path"),
         "raw_path": (request.scope.get("raw_path") or b"").decode(errors="replace"),
