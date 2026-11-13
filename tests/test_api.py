@@ -82,7 +82,9 @@ def test_vercel_rewrite_restores_original_path(monkeypatch):
     spec = importlib.util.spec_from_file_location("vercel_entry", Path(__file__).parent.parent / "api" / "index.py")
     entry = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(entry)
+    # Vercel may load either the module's `app` or the FastAPI instance directly.
     c = TestClient(entry.app)
+    assert TestClient(main.app).get("/api/index?path=health").status_code == 200
     assert c.get("/api/index?path=health").json()["ffmpeg"] is True
     assert c.post("/api/index.py?path=identify/url", json={"url": "https://example.com"}).status_code == 400
     assert c.get("/api/health").status_code == 200  # untouched when Vercel keeps the path
