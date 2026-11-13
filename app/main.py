@@ -51,7 +51,7 @@ async def not_found(request, exc):
     from fastapi.responses import JSONResponse
 
     headers = {k: v for k, v in request.headers.items()
-               if k.startswith("x-") and "ip" not in k and "for" not in k and "signature" not in k}
+               if k.startswith("x-") and not any(w in k for w in ("ip", "for", "signature", "token", "auth", "key", "sc-", "secret", "cookie"))}
     return JSONResponse(status_code=404, content={
         "detail": "Not Found",
         "path": request.scope.get("path"),
